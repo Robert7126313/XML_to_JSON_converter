@@ -117,9 +117,9 @@ public class Main {
         // Font size control panel
         JPanel fontSizePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         JLabel fontSizeLabel = new JLabel("Font Size: ");
-        JButton decreaseFontButton = new JButton("A-");
+        JButton decreaseFontButton = new JButton("-");
         JLabel fontSizeValueLabel = new JLabel(String.valueOf(currentFontSize));
-        JButton increaseFontButton = new JButton("A+");
+        JButton increaseFontButton = new JButton("+");
 
         // Set font for size buttons for better visibility
         Font fontButtonFont = new Font(decreaseFontButton.getFont().getName(), Font.BOLD, 12);
