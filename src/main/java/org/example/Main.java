@@ -225,7 +225,10 @@ public class Main {
                 String result = Converter.jsonToXml(input);
                 outputArea.setText(result);
             } catch (Exception ex) {
-                outputArea.setText("Error: Invalid JSON input.");
+                outputArea.setText("Error: " + ex.getMessage());
+                // Přidáme podrobnější informace pro ladění
+                System.err.println("Conversion error details: " + ex);
+                ex.printStackTrace();
             }
         });
 
@@ -236,7 +239,10 @@ public class Main {
                 String result = Converter.xmlToJson(input);
                 outputArea.setText(result);
             } catch (Exception ex) {
-                outputArea.setText("Error: Invalid XML input.");
+                outputArea.setText("Error: " + ex.getMessage());
+                // Přidáme podrobnější informace pro ladění
+                System.err.println("Conversion error details: " + ex);
+                ex.printStackTrace();
             }
         });
 

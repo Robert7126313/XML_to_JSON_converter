@@ -2,6 +2,7 @@ package org.example;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONException;
 import org.json.XML;
 
 public class Validator {
@@ -16,12 +17,27 @@ public class Validator {
             return "Unknown";
         }
         
-        if (isValidJson(input)) {
-            return "JSON";
-        } else if (isValidXml(input)) {
-            return "XML";
-        } else {
-            return "Unknown";
+        // Optimalizace: Nejprve zkontrolujeme prvotní znaky pro rychlejší detekci
+        String trimmed = input.trim();
+        char firstChar = trimmed.charAt(0);
+        
+        // JSON obvykle začíná znaky { nebo [
+        if (firstChar == '{' || firstChar == '[') {
+            return isValidJson(trimmed) ? "JSON" : "Unknown";
+        } 
+        // XML obvykle začíná znaky < nebo <?
+        else if (firstChar == '<') {
+            return isValidXml(trimmed) ? "XML" : "Unknown";
+        } 
+        else {
+            // Pokud nejsou splněny výše uvedené podmínky, zkusíme obě možnosti
+            if (isValidJson(trimmed)) {
+                return "JSON";
+            } else if (isValidXml(trimmed)) {
+                return "XML";
+            } else {
+                return "Unknown";
+            }
         }
     }
 
@@ -40,19 +56,27 @@ public class Validator {
                                      .replaceAll("//.*?\\n", "\n")
                                      .trim();
         
-        try {
-            // Try to parse as JSON object
-            new JSONObject(normalized);
-            return true;
-        } catch (Exception e) {
+        // Nejprve zkusíme, jestli je to JSON pole
+        if (normalized.startsWith("[") && normalized.endsWith("]")) {
             try {
-                // If not an object, try to parse as array
                 new JSONArray(normalized);
                 return true;
-            } catch (Exception ex) {
+            } catch (JSONException e) {
+                // Pokračujeme dále ke kontrole JSON objektu
+            }
+        }
+        
+        // Potom zkusíme, jestli je to JSON objekt
+        if (normalized.startsWith("{") && normalized.endsWith("}")) {
+            try {
+                new JSONObject(normalized);
+                return true;
+            } catch (JSONException e) {
                 return false;
             }
         }
+        
+        return false;
     }
 
     /**
