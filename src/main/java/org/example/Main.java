@@ -17,7 +17,23 @@ import java.util.List;
 
 public class Main {
 
+    private static JTextArea inputArea;
+    private static JTextArea outputArea;
+    private static JButton jsonToXmlButton;
+    private static JButton xmlToJsonButton;
+    private static JLabel formatLabel;
+    private static int currentFontSize = 12; // Default font size
+    private static final int MIN_FONT_SIZE = 8;
+    private static final int MAX_FONT_SIZE = 36;
+
     public static void main(String[] args) {
+        // Set Look and Feel to system default
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            // Fallback to default look and feel
+        }
+
         JFrame frame = new JFrame("XML/JSON Converter");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -47,11 +63,11 @@ public class Main {
         // Middle part: Input and output fields
         JPanel centerPanel = new JPanel(new GridLayout(2, 1, 5, 5));
         centerPanel.setBorder(new EmptyBorder(10, 10, 10, 10)); // Add padding
-        JTextArea inputArea = new JTextArea();
+        inputArea = new JTextArea();
         inputArea.setBorder(new EmptyBorder(10, 10, 10, 10)); // Add padding
         JScrollPane scrollInput = new JScrollPane(inputArea);
 
-        JTextArea outputArea = new JTextArea();
+        outputArea = new JTextArea();
         outputArea.setBorder(new EmptyBorder(10, 10, 10, 10)); // Add padding
         JScrollPane scrollOutput = new JScrollPane(outputArea);
 
@@ -92,21 +108,50 @@ public class Main {
 
         // Buttons in the center
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        JButton jsonToXmlButton = new JButton("JSON to XML");
-        JButton xmlToJsonButton = new JButton("XML to JSON");
+        jsonToXmlButton = new JButton("JSON to XML");
+        xmlToJsonButton = new JButton("XML to JSON");
         JButton loadSampleButton = new JButton("Load Sample");
         JButton loadFileButton = new JButton("Load File");
         JButton exportFileButton = new JButton("Export File");
+
+        // Font size control panel
+        JPanel fontSizePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        JLabel fontSizeLabel = new JLabel("Font Size: ");
+        JButton decreaseFontButton = new JButton("A-");
+        JLabel fontSizeValueLabel = new JLabel(String.valueOf(currentFontSize));
+        JButton increaseFontButton = new JButton("A+");
+
+        // Set font for size buttons for better visibility
+        Font fontButtonFont = new Font(decreaseFontButton.getFont().getName(), Font.BOLD, 12);
+        decreaseFontButton.setFont(fontButtonFont);
+        increaseFontButton.setFont(fontButtonFont);
+
+        // Set preferred size for font buttons
+        Dimension fontButtonSize = new Dimension(45, 25);
+        decreaseFontButton.setPreferredSize(fontButtonSize);
+        increaseFontButton.setPreferredSize(fontButtonSize);
+
+        fontSizePanel.add(fontSizeLabel);
+        fontSizePanel.add(decreaseFontButton);
+        fontSizePanel.add(fontSizeValueLabel);
+        fontSizePanel.add(increaseFontButton);
+
+        // Add all buttons to panel
         buttonPanel.add(jsonToXmlButton);
         buttonPanel.add(xmlToJsonButton);
         buttonPanel.add(loadSampleButton);
         buttonPanel.add(loadFileButton);
         buttonPanel.add(exportFileButton);
 
+        // Add font size controls to right side
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        rightPanel.add(fontSizePanel);
+
         bottomPanel.add(buttonPanel, BorderLayout.CENTER);
+        bottomPanel.add(rightPanel, BorderLayout.EAST);
 
         // Format label on the bottom left
-        JLabel formatLabel = new JLabel("Format: Unknown");
+        formatLabel = new JLabel("Format: Unknown");
         formatLabel.setHorizontalAlignment(SwingConstants.LEFT);
         formatLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 0));
         bottomPanel.add(formatLabel, BorderLayout.WEST);
@@ -254,20 +299,99 @@ public class Main {
 
         // Export File button
         exportFileButton.addActionListener(e -> {
+            if (outputArea.getText().isEmpty()) {
+                JOptionPane.showMessageDialog(panel, "No output to export.", "Warning", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
             JFileChooser fileChooser = new JFileChooser();
+            String suggestedExtension = ".txt";
+
+            // Set appropriate file extension filter based on output content
+            if (outputArea.getText().trim().startsWith("<")) {
+                suggestedExtension = ".xml";
+                fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("XML Files", "xml"));
+            } else if (outputArea.getText().trim().startsWith("{") || outputArea.getText().trim().startsWith("[")) {
+                suggestedExtension = ".json";
+                fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("JSON Files", "json"));
+            }
+
             int result = fileChooser.showSaveDialog(frame);
             if (result == JFileChooser.APPROVE_OPTION) {
                 File selectedFile = fileChooser.getSelectedFile();
                 String filePath = selectedFile.getAbsolutePath();
-                if (!filePath.toLowerCase().endsWith(".txt")) {
-                    filePath += ".txt";
+
+                // Add appropriate extension if not present
+                if (!filePath.toLowerCase().endsWith(".xml") &&
+                        !filePath.toLowerCase().endsWith(".json") &&
+                        !filePath.toLowerCase().endsWith(".txt")) {
+                    filePath += suggestedExtension;
                 }
+
                 try {
-                    FileUtils.writeFile(filePath, inputArea.getText());
+                    FileUtils.writeFile(filePath, outputArea.getText());
+                    JOptionPane.showMessageDialog(panel, "File saved successfully: " + filePath);
                 } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(panel, "Error saving file: " + ex.getMessage());
+                    JOptionPane.showMessageDialog(
+                            panel,
+                            "Error saving file: " + ex.getMessage(),
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE
+                    );
                 }
             }
         });
+
+        // Add keyboard shortcuts
+        KeyStroke ctrlS = KeyStroke.getKeyStroke("control S");
+        KeyStroke ctrlO = KeyStroke.getKeyStroke("control O");
+
+        panel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(ctrlS, "save");
+        panel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(ctrlO, "open");
+
+        panel.getActionMap().put("save", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                exportFileButton.doClick();
+            }
+        });
+
+        panel.getActionMap().put("open", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                loadFileButton.doClick();
+            }
+        });
+
+        // Font size adjustment functions
+        decreaseFontButton.addActionListener(e -> {
+            if (currentFontSize > MIN_FONT_SIZE) {
+                currentFontSize--;
+                updateFontSize();
+                fontSizeValueLabel.setText(String.valueOf(currentFontSize));
+            }
+        });
+
+        increaseFontButton.addActionListener(e -> {
+            if (currentFontSize < MAX_FONT_SIZE) {
+                currentFontSize++;
+                updateFontSize();
+                fontSizeValueLabel.setText(String.valueOf(currentFontSize));
+            }
+        });
+
+        // Initialize font size
+        updateFontSize();
+    }
+
+    /**
+     * Updates the font size for both input and output text areas
+     */
+    private static void updateFontSize() {
+        Font currentFont = inputArea.getFont();
+        Font newFont = new Font(currentFont.getFontName(), currentFont.getStyle(), currentFontSize);
+
+        inputArea.setFont(newFont);
+        outputArea.setFont(newFont);
     }
 }

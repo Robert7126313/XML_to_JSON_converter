@@ -7,11 +7,15 @@ import org.json.XML;
 public class Validator {
 
     /**
-     * Detekuje typ vstupu (JSON, XML, nebo Unknown).
-     * @param input Vstupní data jako String.
-     * @return Typ dat ("JSON", "XML" nebo "Unknown").
+     * Detects the type of input (JSON, XML, or Unknown).
+     * @param input Input data as String.
+     * @return Data type ("JSON", "XML" or "Unknown").
      */
     public static String detectType(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return "Unknown";
+        }
+        
         if (isValidJson(input)) {
             return "JSON";
         } else if (isValidXml(input)) {
@@ -22,19 +26,28 @@ public class Validator {
     }
 
     /**
-     * Kontroluje, zda je vstup validní JSON.
-     * @param jsonString Vstupní JSON jako String.
-     * @return `true`, pokud je JSON validní; jinak `false`.
+     * Checks if the input is valid JSON.
+     * @param jsonString Input JSON as String.
+     * @return `true` if JSON is valid; otherwise `false`.
      */
     public static boolean isValidJson(String jsonString) {
+        if (jsonString == null || jsonString.trim().isEmpty()) {
+            return false;
+        }
+        
+        // Remove comments if present (not standard JSON but often used)
+        String normalized = jsonString.replaceAll("(?s)/\\*.*?\\*/", "")
+                                     .replaceAll("//.*?\\n", "\n")
+                                     .trim();
+        
         try {
-            // Pokus o parsování JSON objektu
-            new JSONObject(jsonString);
+            // Try to parse as JSON object
+            new JSONObject(normalized);
             return true;
         } catch (Exception e) {
             try {
-                // Pokud to není objekt, pokus o parsování jako pole
-                new JSONArray(jsonString);
+                // If not an object, try to parse as array
+                new JSONArray(normalized);
                 return true;
             } catch (Exception ex) {
                 return false;
@@ -43,13 +56,17 @@ public class Validator {
     }
 
     /**
-     * Kontroluje, zda je vstup validní XML.
-     * @param xmlString Vstupní XML jako String.
-     * @return `true`, pokud je XML validní; jinak `false`.
+     * Checks if the input is valid XML.
+     * @param xmlString Input XML as String.
+     * @return `true` if XML is valid; otherwise `false`.
      */
     public static boolean isValidXml(String xmlString) {
+        if (xmlString == null || xmlString.trim().isEmpty()) {
+            return false;
+        }
+        
         try {
-            // Pokud se XML dá převést na JSON, je validní
+            // If XML can be converted to JSON, it is valid
             XML.toJSONObject(xmlString);
             return true;
         } catch (Exception e) {
@@ -58,11 +75,15 @@ public class Validator {
     }
 
     /**
-     * Vrací chybovou zprávu, pokud vstup není validní JSON nebo XML.
-     * @param input Vstupní data jako String.
-     * @return Popis chyby, pokud je vstup nevalidní; jinak `null`.
+     * Returns an error message if the input is not valid JSON or XML.
+     * @param input Input data as String.
+     * @return Error description if the input is invalid; otherwise `null`.
      */
     public static String getValidationError(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return "Input is empty or null.";
+        }
+        
         if (!isValidJson(input) && !isValidXml(input)) {
             return "Input is neither valid JSON nor XML.";
         } else if (!isValidJson(input)) {
